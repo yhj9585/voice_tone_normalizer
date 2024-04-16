@@ -4,7 +4,10 @@ Created on Tue Apr 16 14:47:49 2024
 
 @author: H.J. Yoon
 
-Pydub Load + Librosa Mel + MFCC >> PADDED DATA SAVE
+Pydub Load + Librosa Mel + MFCC >> PICKLE DATA 
+
+git commit - merge - git pull.
+
 """
 
 import numpy as np
@@ -34,7 +37,7 @@ output_folder = "output_test/"
 ult_src = "train_data_01/003/"
 
 # 임시로 몇 개 골라서 TEST
-folder_list = ['106','131','175']
+#folder_list = ['106','131','175']
 
 sample_rate = 16000
 n_fft = 400
@@ -63,7 +66,7 @@ def pydubTolibrosa(audioBypeople, folder, s) :
     '''
     
     # MFCC
-    mfcc_sound = librosa.feature.mfcc(S=meled_long, n_mfcc=100, n_fft=400, hop_length=160)
+    mfcc_sound = librosa.feature.mfcc(S=meled_long, n_mfcc=20, n_fft=400, hop_length=160)
     padded_mfcc = pad2d(mfcc_sound, 200)
     
     # 100*200 DATASET
@@ -86,6 +89,8 @@ def loadSoundperPerson(folder, subFolder, audioBypeople) :
     for s, nowfile in enumerate(sublist) : # 사람 폴더에서 파일 불러오기
         if nowfile.endswith('txt') :
             continue
+        
+        if s > 50 : break
         
         thisaudio = os.path.join(subFolder, nowfile)
         print(thisaudio)
@@ -126,12 +131,13 @@ def loadSoundperPerson(folder, subFolder, audioBypeople) :
 
 
 all_list = os.listdir(ult_src)
-#print(all_list)
-#folder_list = [x for x in list if os.path.isdir(x)]
+print(all_list)
+#folder_list = [x for x in all_list if os.path.isdir(x)]
+
 
 audioBypeople = AudioSegment.empty()
 
-for i, folder in enumerate(folder_list) :  # 폴더 전체에서 사람 찾기
+for i, folder in enumerate(all_list) :  # 폴더 전체에서 사람 찾기
     nowdir = os.path.join(ult_src, folder)
     print(nowdir)
     loadSoundperPerson(folder, nowdir, audioBypeople)
