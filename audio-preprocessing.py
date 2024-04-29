@@ -20,6 +20,7 @@ import os
 import subprocess
 
 import pickle
+import soundfile as sf
 
 # ffmpeg 설치 필요
 #AudioSegment.ffmpeg = "C:/Users/yhj62/scoop/apps/ffmpeg/7.0"
@@ -45,29 +46,75 @@ hop_length = 160
 
 pad2d = lambda a, i: a[:, 0:i] if a.shape[1] > i else np.hstack((a, np.zeros((a.shape[0], i-a.shape[1]))))
 
+
+def audiosegment_to_ndarray(audiosegment):
+    samples = audiosegment.get_array_of_samples()
+    samples_float = librosa.util.buf_to_float(samples,n_bytes=2,
+                                      dtype=np.float32)
+    if audiosegment.channels==2:
+        sample_left= np.copy(samples_float[::2])
+        sample_right= np.copy(samples_float[1::2])
+        sample_all = np.array([sample_left,sample_right])
+    else:
+        sample_all = samples_float
+        
+    return [sample_all,audiosegment.frame_rate]
+    
+
 def pydubTolibrosa(audioBypeople, folder, s) :
     
+    '''
     sample = audioBypeople.get_array_of_samples()
     arr = np.array(sample).astype(np.float32)       # TO librosa
     y, index = librosa.effects.trim(arr)
+    '''
+    
+    y, index = audiosegment_to_ndarray(audioBypeople)
+    
+    
+    print(index)
     
     # Mel spectrogram
-    meled = librosa.feature.melspectrogram(y=y, sr=16000, n_mels=128)
+    meled = librosa.feature.melspectrogram(y=y, sr=16000, n_mels=128, hop_length=160, n_fft=400)
     meled_long = librosa.power_to_db(meled, ref=np.max)
+    padded_meled = pad2d(meled_long, 200)
     
     # Output Visualization
-    '''
+    
     plt.figure(figsize=(10, 4))
-    librosa.display.specshow(meled_long, y_axis = 'mel', sr = 16000, hop_length = 16000, x_axis = 'time')
+    librosa.display.specshow(meled, y_axis = 'mel', sr = 16000, hop_length = 16000, x_axis = 'time')
     plt.colorbar(format = '%+2.0f dB')
     plt.title('Mel Spectrogram')
     plt.tight_layout()
     plt.show()
-    '''
+    
     
     # MFCC
-    mfcc_sound = librosa.feature.mfcc(S=meled_long, n_mfcc=20, n_fft=400, hop_length=160)
+    mfcc_sound = librosa.feature.mfcc(S=y, n_mfcc=20, n_fft=400, hop_length=160)
     padded_mfcc = pad2d(mfcc_sound, 200)
+    
+    '''
+    y3 = librosa.feature.inverse.mfcc_to_audio(mfcc=padded_mfcc,
+                                              n_mels=128,
+                                              sr=sample_rate,
+                                              n_fft=400
+                                              )
+    '''
+    
+    '''
+    y1 = librosa.feature.inverse.mfcc_to_mel(mfcc=mfcc_sound,
+                                            n_mels=128)
+                                            
+    y2 = librosa.db_to_power(y1, ref=1.0)'''
+    
+    y3 = librosa.feature.inverse.mel_to_audio(meled, sr=16000, n_fft=400, hop_length=160)
+
+    output_folder1 = "output_test/"
+    output1 = os.path.join(output_folder1, f'test1.wav')
+
+    sf.write(output1, y3, sample_rate, 'PCM_24')
+    
+    
     
     # 100*200 DATASET
     #print(mfcc_sound.shape)
@@ -90,7 +137,7 @@ def loadSoundperPerson(folder, subFolder, audioBypeople) :
         if nowfile.endswith('txt') :
             continue
         
-        if s > 50 : break
+        if s > 3 : break
         
         thisaudio = os.path.join(subFolder, nowfile)
         print(thisaudio)
@@ -138,11 +185,13 @@ print(all_list)
 audioBypeople = AudioSegment.empty()
 
 for i, folder in enumerate(all_list) :  # 폴더 전체에서 사람 찾기
+
+    if (i > 2) : break
     nowdir = os.path.join(ult_src, folder)
     print(nowdir)
     loadSoundperPerson(folder, nowdir, audioBypeople)
     
-    #output = os.path.join(output_folder, f'test.wav')
-    #audioBypeople.export(output, format='wav')
+    output = os.path.join(output_folder, f'test.wav')
+    audioBypeople.export(output, format='wav')
     
 
