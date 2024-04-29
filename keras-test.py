@@ -18,6 +18,8 @@ import pickle
 
 from sklearn.cluster import KMeans
 
+import soundfile as sf
+
 
 ####################################################################
 ## TEST DATA ###
@@ -46,7 +48,6 @@ for i, file in enumerate(all_list) :  # 폴더 전체에서 사람 찾기
     
     print(len(temp_data))
 
-    
     numpy_temp = np.array(temp_data)
     #print(numpy_temp)
     mfcc_sound.append(numpy_temp)
@@ -59,26 +60,32 @@ sample_rate = 16000
 n_fft = 400
 hop_length = 160
 
+'''
+y = librosa.feature.inverse.mfcc_to_audio(mfcc=mfcc_sound[0][0]
+                                          n_mels=128)
 
-y = librosa.feature.inverse.mfcc_to_audio(mfcc=mfcc_sound[0][0], 
-                                          sr=sample_rate,
-                                          hop_length=hop_length,
-                                          n_fft=n_fft)
+#y2 = librosa.feature.inverse.db_to_power(y,ref=np.max)
 
-y2 = librosa.feature.inverse.db_to_power(y,ref=np.max)
-
-y3 = librosa.feature.inverse.mel_to_audio(y2,
+y3 = librosa.feature.inverse.mel_to_audio(y,
                                           sr=sample_rate,
                                           n_mels=128)
+'''
+y = librosa.feature.inverse.mfcc_to_audio(mfcc=mfcc_sound[0][0],
+                                          n_mels=128,
+                                          sr=sample_rate,
+                                          n_fft=400
+                                          )
+
 
 
 output_folder = "output_test/"
 output = os.path.join(output_folder, f'test11.wav')
 
+sf.write(output, y, sample_rate, 'PCM_24')
 
-
-y2.export(output, format='wav')
-    
+'''
+y.export(output, format='wav')
+    '''
 
 
 
